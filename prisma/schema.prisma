@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model barcode_data {
+  id        Int      @id @default(autoincrement())
+  barcode   String?  @db.VarChar(155)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+
+  @@map("barcode-data")
+}
+
+model competitor_price {
+  id            Int         @id @default(autoincrement())
+  competitorsId Int
+  price         String?     @db.VarChar(45)
+  createdAt     DateTime    @default(now()) @db.DateTime(0)
+  competitors   competitors @relation(fields: [competitorsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_competitor-price_competitor-products-url1")
+
+  @@index([competitorsId], map: "fk_competitor-price_competitor-products-url1_idx")
+  @@map("competitor-price")
+}
+
+model competitors {
+  id               Int                      @id @default(autoincrement())
+  url              String?                  @db.VarChar(355)
+  companyName      competitors_companyName?
+  productsListId   Int
+  competitor_price competitor_price[]
+  products         products                 @relation(fields: [productsListId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_competitor-products-url_stockbot-products1")
+  stockbot_stock   stockbot_stock[]
+
+  @@index([productsListId], map: "fk_competitor-products-url_stockbot-products1_idx")
+}
+
+model mail_data {
+  id               Int                  @id @default(autoincrement())
+  timestamp        DateTime?            @default(now()) @db.DateTime(0)
+  eventType        mail_data_eventType?
+  destination      String?              @db.VarChar(255)
+  mailSubject      String?              @db.VarChar(255)
+  type             String?              @db.VarChar(255)
+  messageId        String?              @db.VarChar(255)
+  topicArn         String?              @db.VarChar(255)
+  subject          String?              @db.VarChar(255)
+  message          Json?
+  signatureVersion String?              @db.VarChar(255)
+  signature        String?              @db.VarChar(255)
+  signingCertURL   String?              @db.VarChar(255)
+  unsubscribeURL   String?              @db.VarChar(255)
+
+  @@map("mail-data")
+}
+
+model notify_bot {
+  id        Int      @id @default(autoincrement())
+  customer  String?  @db.VarChar(155)
+  product   String?  @db.VarChar(155)
+  logs      String?  @db.VarChar(1555)
+  createdAt DateTime @default(now()) @db.DateTime(0)
+
+  @@map("notify-bot")
+}
+
+model products {
+  id          Int           @id @default(autoincrement())
+  productName String?       @db.VarChar(255)
+  competitors competitors[]
+}
+
+model session {
+  id                 Int       @id @default(autoincrement())
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @default(now())
+  expiresAt          DateTime?
+  handle             String    @unique(map: "Session_handle_key")
+  hashedSessionToken String?
+  antiCSRFToken      String?
+  publicData         String?
+  privateData        String?
+  userId             Int?
+  user               user?     @relation(fields: [userId], references: [id], map: "Session_userId_fkey")
+
+  @@index([userId], map: "Session_userId_fkey")
+}
+
+model stockbot_data {
+  id           Int       @id @default(autoincrement())
+  name         String?   @db.VarChar(155)
+  url          String?   @db.VarChar(155)
+  stock        String?   @db.VarChar(45)
+  priceWithGst String?   @db.VarChar(45)
+  createdAt    DateTime? @default(now()) @db.DateTime(0)
+
+  @@map("stockbot-data")
+}
+
+model stockbot_stock {
+  id            Int         @id @default(autoincrement())
+  stock         String?     @db.VarChar(45)
+  createdAt     DateTime    @default(now()) @db.DateTime(0)
+  competitorsId Int
+  competitors   competitors @relation(fields: [competitorsId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_stockbot-stock_competitors1")
+
+  @@index([competitorsId], map: "fk_stockbot-stock_competitors1_idx")
+  @@map("stockbot-stock")
+}
+
+model token {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  hashedToken String
+  type        String
+  expiresAt   DateTime
+  sentTo      String
+  userId      Int
+  user        user     @relation(fields: [userId], references: [id], map: "Token_userId_fkey")
+
+  @@unique([hashedToken, type], map: "Token_hashedToken_type_key")
+  @@index([userId], map: "Token_userId_fkey")
+}
+
+model user {
+  id             Int       @id @default(autoincrement())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now())
+  name           String?
+  email          String    @unique(map: "User_email_key")
+  hashedPassword String?
+  role           String    @default("USER")
+  session        session[]
+  token          token[]
+}
+
+enum competitors_companyName {
+  ROBOCRAZE
+  CRAZYPI
+  FLYROBO
+  MODULE143
+  PROBOTS
+  ROBOKITS
+  ROBU
+  SILVERLINE
+  THINGBITS
+  THOMSON_ELECTRONICS @map("THOMSON ELECTRONICS")
+  ZBOTIC
+  ELECTRONICS_COMP    @map("ELECTRONICS COMP")
+}
+
+enum mail_data_eventType {
+  Bounce
+  Click
+  Complaint
+  Delivery
+  DeliveryDelay
+  Open
+  Send
+
+  @@map("mail-data_eventType")
+}
